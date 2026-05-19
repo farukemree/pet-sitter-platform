@@ -1,0 +1,57 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Giris - Evcil Hayvan Bakici Platformu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 420px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #34495e; }
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .register-link { text-align: center; margin-top: 16px; }
+    .register-link a { color: #3498db; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h2 style="text-align:center; margin-bottom:20px; color:#2c3e50;">Giris Yap</h2>
+    <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="form-group">
+            <label for="email">E-posta</label>
+            <input type="email" id="email" name="email" value="{{ email or '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Sifre</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn-submit">Giris</button>
+    </form>
+    <div class="register-link">
+        Hesabiniz yok mu? <a href="{{ url_for('auth.register_page') }}">Kayit Ol</a>
+    </div>
+</div>
+{% endblock %}

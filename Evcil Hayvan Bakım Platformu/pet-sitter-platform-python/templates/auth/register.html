@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Kayit Ol - Evcil Hayvan Bakici Platformu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .form-header h2 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+
+    .form-header p {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #34495e;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    .role-selection {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .role-option {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+    }
+
+    .role-option input[type="radio"] {
+        display: none;
+    }
+
+    .role-option:hover {
+        border-color: #3498db;
+    }
+
+    .role-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .role-description {
+        font-size: 12px;
+        color: #7f8c8d;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .checkbox-group label {
+        font-weight: normal;
+        font-size: 13px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .btn-submit:hover {
+        background-color: #229954;
+    }
+
+    .login-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+
+    .login-link a {
+        color: #3498db;
+        text-decoration: none;
+    }
+
+    .required {
+        color: #e74c3c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <div class="form-header">
+        <h2>Kayit Ol</h2>
+        <p>Platformumuza katilarak evcil hayvan bakici bulun veya bakicilik hizmeti verin.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+        <div class="form-group">
+            <label for="name">Ad Soyad <span class="required">*</span></label>
+            <input type="text" id="name" name="name" value="{{ name or '' }}" required placeholder="Ahmet Yilmaz">
+        </div>
+
+        <div class="form-group">
+            <label for="email">E-posta <span class="required">*</span></label>
+            <input type="email" id="email" name="email" value="{{ email or '' }}" required placeholder="ornek@email.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Sifre <span class="required">*</span></label>
+            <input type="password" id="password" name="password" required placeholder="En az 6 karakter" minlength="6">
+        </div>
+
+        <div class="form-group">
+            <label>Hesap Turu <span class="required">*</span></label>
+            <div class="role-selection">
+                <label class="role-option">
+                    <input type="radio" name="role" value="owner" {% if role == 'owner' %}checked{% endif %} required>
+                    <div class="role-label">Evcil Hayvan Sahibi</div>
+                    <div class="role-description">Bakici ariyorum</div>
+                </label>
+                <label class="role-option">
+                    <input type="radio" name="role" value="sitter" {% if role == 'sitter' %}checked{% endif %} required>
+                    <div class="role-label">Bakici</div>
+                    <div class="role-description">Bakicilik hizmeti veriyorum</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">Kullanici sozlesmesini kabul ediyorum. <span class="required">*</span></label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Kayit Ol</button>
+    </form>
+
+    <div class="login-link">
+        Zaten hesabiniz var mi? <a href="{{ url_for('auth.login_page') }}">Giris Yap</a>
+    </div>
+</div>
+{% endblock %}

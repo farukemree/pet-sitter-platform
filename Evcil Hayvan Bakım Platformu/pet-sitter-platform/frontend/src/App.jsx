@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { messageService } from './services/messageService';
+import MessagesPage from './pages/MessagesPage';
+import ConversationsPage from './pages/ConversationsPage';
 
 const API_URL = 'http://localhost:5000/api/auth';
 const LISTINGS_API_URL = 'http://localhost:5000/api/listings';
@@ -45,8 +48,58 @@ function App() {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [updatingBookingId, setUpdatingBookingId] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0);
+  const [messagePartnerId, setMessagePartnerId] = useState(null);
+  const [messagePartnerName, setMessagePartnerName] = useState('');
 
   const getToken = () => localStorage.getItem('token');
+
+  const fetchConversations = async () => {
+    try {
+      setLoadingConversations(true);
+      const conv = await messageService.getConversations();
+      setConversations(conv || []);
+      setTotalUnread((conv || []).reduce((sum, item) => sum + (item.unread_count || 0), 0));
+      return true;
+    } catch (error) {
+      console.error('Fetch conversations error:', error);
+      alert(error.response?.message || 'Sohbet listesi yüklenemedi.');
+      return false;
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const openConversation = (partnerId, partnerName = '') => {
+    setMessagePartnerId(partnerId);
+    setMessagePartnerName(partnerName);
+    setCurrentView('messages');
+  };
+
+  const openConversations = async () => {
+    const success = await fetchConversations();
+    if (success) {
+      setCurrentView('conversations');
+    }
+  };
+
+  const openMessagePage = (partnerId, partnerName = '') => {
+    if (!partnerId) {
+      alert('Mesajlaşmak için kullanıcı seçilmelidir.');
+      return;
+    }
+    setMessagePartnerId(partnerId);
+    setMessagePartnerName(partnerName);
+    setCurrentView('messages');
+  };
+
+  const closeMessagePage = () => {
+    setMessagePartnerId(null);
+    setMessagePartnerName('');
+    setCurrentView('conversations');
+  };
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -110,6 +163,10 @@ function App() {
     setListings([]);
     setBookings([]);
     setSelectedListing(null);
+    setConversations([]);
+    setMessagePartnerId(null);
+    setMessagePartnerName('');
+    setTotalUnread(0);
 
     setListingForm({
       title: '',
@@ -485,13 +542,17 @@ function App() {
                 oluşturabilirsiniz.
               </p>
 
-              <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
                 <button onClick={fetchListings} style={actionButtonStyle}>
                   Bakıcıları Listele
                 </button>
 
                 <button onClick={fetchMyBookings} style={actionButtonStyle}>
                   Rezervasyonlarım
+                </button>
+
+                <button onClick={openConversations} style={actionButtonStyle}>
+                  Sohbetlerim {totalUnread > 0 && <span style={badgeStyle}>{totalUnread}</span>}
                 </button>
               </div>
             </div>
@@ -527,6 +588,13 @@ function App() {
 
                       <button onClick={() => openBookingForm(listing)} style={buttonStyle}>
                         Rezervasyon Talebi Oluştur
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openMessagePage(listing.sitter_id, listing.sitter_name)}
+                        style={secondaryButtonStyle}
+                      >
+                        Mesajlaş
                       </button>
                     </div>
                   ))}
@@ -616,7 +684,22 @@ function App() {
                 getStatusText={getStatusText}
                 updateBookingStatus={updateBookingStatus}
                 updatingBookingId={updatingBookingId}
+                onMessage={openMessagePage}
               />
+            )}
+
+            {currentView === 'conversations' && (
+              <ConversationsPage
+                conversations={conversations}
+                loading={loadingConversations}
+                totalUnread={totalUnread}
+                onOpenConversation={openConversation}
+                onBack={() => setCurrentView('dashboard')}
+              />
+            )}
+
+            {currentView === 'messages' && messagePartnerId && (
+              <MessagesPage partnerId={messagePartnerId} partnerName={messagePartnerName} onBack={closeMessagePage} />
             )}
           </>
         )}
@@ -631,9 +714,13 @@ function App() {
                 güncelleyebilirsiniz.
               </p>
 
-              <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
                 <button onClick={fetchMyBookings} style={actionButtonStyle}>
                   Gelen Talepler
+                </button>
+
+                <button onClick={openConversations} style={actionButtonStyle}>
+                  Sohbetlerim {totalUnread > 0 && <span style={badgeStyle}>{totalUnread}</span>}
                 </button>
 
                 <button onClick={() => setCurrentView('create-listing')} style={actionButtonStyle}>
@@ -704,7 +791,22 @@ function App() {
                 getStatusText={getStatusText}
                 updateBookingStatus={updateBookingStatus}
                 updatingBookingId={updatingBookingId}
+                onMessage={openMessagePage}
               />
+            )}
+
+            {currentView === 'conversations' && (
+              <ConversationsPage
+                conversations={conversations}
+                loading={loadingConversations}
+                totalUnread={totalUnread}
+                onOpenConversation={openConversation}
+                onBack={() => setCurrentView('dashboard')}
+              />
+            )}
+
+            {currentView === 'messages' && messagePartnerId && (
+              <MessagesPage partnerId={messagePartnerId} partnerName={messagePartnerName} onBack={closeMessagePage} />
             )}
           </>
         )}
@@ -720,7 +822,8 @@ function BookingsList({
   loadingBookings,
   getStatusText,
   updateBookingStatus,
-  updatingBookingId
+  updatingBookingId,
+  onMessage
 }) {
   return (
     <div style={{ marginTop: '25px' }}>
@@ -771,25 +874,40 @@ function BookingsList({
               <strong>Durum:</strong> {getStatusText(booking.status)}
             </p>
 
-            {userRole === 'sitter' && booking.status === 'pending' && (
-              <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+              {(userRole === 'owner' || userRole === 'sitter') && (
                 <button
-                  onClick={() => updateBookingStatus(booking.id, 'accepted')}
-                  disabled={updatingBookingId === booking.id}
-                  style={successButtonStyle}
+                  type="button"
+                  onClick={() => onMessage(
+                    userRole === 'owner' ? booking.sitter_id : booking.owner_id,
+                    userRole === 'owner' ? booking.sitter_name : booking.owner_name
+                  )}
+                  style={secondaryButtonStyle}
                 >
-                  Kabul Et
+                  Mesajlaş
                 </button>
+              )}
 
-                <button
-                  onClick={() => updateBookingStatus(booking.id, 'rejected')}
-                  disabled={updatingBookingId === booking.id}
-                  style={dangerButtonStyle}
-                >
-                  Reddet
-                </button>
-              </div>
-            )}
+              {userRole === 'sitter' && booking.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => updateBookingStatus(booking.id, 'accepted')}
+                    disabled={updatingBookingId === booking.id}
+                    style={successButtonStyle}
+                  >
+                    Kabul Et
+                  </button>
+
+                  <button
+                    onClick={() => updateBookingStatus(booking.id, 'rejected')}
+                    disabled={updatingBookingId === booking.id}
+                    style={dangerButtonStyle}
+                  >
+                    Reddet
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>

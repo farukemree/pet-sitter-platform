@@ -47,6 +47,24 @@ class MessageController {
       });
     }
   }
+
+  async getConversations(req, res) {
+    try {
+      const userId = req.user.id;
+      const conversations = await messageService.getConversations(userId);
+
+      res.status(200).json({
+        success: true,
+        data: conversations
+      });
+    } catch (error) {
+      console.error('Get conversations error:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Sohbet listesi yüklenemedi'
+      });
+    }
+  }
 }
 
 module.exports = new MessageController();

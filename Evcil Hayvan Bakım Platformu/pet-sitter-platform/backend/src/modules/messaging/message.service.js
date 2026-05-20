@@ -30,6 +30,12 @@ class MessageService {
 
     return await messageRepository.getChatHistory(userId, chatPartnerId);
   }
+
+  async getConversations(userId) {
+    return await messageRepository.getConversations(userId);
+  }
 }
+
+module.exports = new MessageService();
 
 module.exports = new MessageService();

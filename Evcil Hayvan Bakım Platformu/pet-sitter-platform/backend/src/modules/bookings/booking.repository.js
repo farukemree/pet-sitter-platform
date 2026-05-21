@@ -85,6 +85,12 @@ class BookingRepository {
     return result.rows;
   }
 
+  async findById(bookingId) {
+    const query = 'SELECT * FROM bookings WHERE id = $1';
+    const result = await db.query(query, [bookingId]);
+    return result.rows[0] || null;
+  }
+
   async updateStatus(bookingId, sitterId, status) {
     const query = `
       UPDATE bookings

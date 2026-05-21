@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { messageService } from './services/messageService';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import SitterListPage from './pages/SitterListPage';
+import ProfileEditPage from './pages/ProfileEditPage';
+import SitterDetailPage from './pages/SitterDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import ConversationsPage from './pages/ConversationsPage';
 
@@ -367,8 +372,19 @@ function App() {
   };
 
   const updateBookingStatus = async (bookingId, status) => {
+    const parsedBookingId = Number(bookingId);
+    if (!Number.isInteger(parsedBookingId) || parsedBookingId <= 0) {
+      alert('Geçersiz rezervasyon IDsi.');
+      return;
+    }
+
+    if (!['accepted', 'rejected'].includes(status)) {
+      alert('Geçersiz rezervasyon durumu.');
+      return;
+    }
+
     try {
-      setUpdatingBookingId(bookingId);
+      setUpdatingBookingId(parsedBookingId);
 
       const token = getToken();
 
@@ -378,7 +394,7 @@ function App() {
       }
 
       const response = await axios.patch(
-        `${BOOKINGS_API_URL}/${bookingId}/status`,
+        `${BOOKINGS_API_URL}/${parsedBookingId}/status`,
         { status },
         {
           headers: {
@@ -393,7 +409,7 @@ function App() {
       }
     } catch (error) {
       console.error('Update booking status error:', error);
-      alert(error.response?.data?.message || 'Rezervasyon durumu güncellenemedi.');
+      alert(error.response?.data?.message || error.message || 'Rezervasyon durumu güncellenemedi.');
     } finally {
       setUpdatingBookingId(null);
     }
@@ -412,104 +428,38 @@ function App() {
   };
 
   if (!isLoggedIn) {
-    return (
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <h1 style={{ color: '#ff6b6b', marginBottom: '10px' }}>🐾 PatiBakım</h1>
-
-          <p style={{ color: '#6c757d', marginBottom: '25px' }}>
-            {isLoginView ? 'Hesabınıza giriş yapın' : 'Platformumuza kayıt olun'}
-          </p>
-
-          {errorMessage && <div style={errorAlertStyle}>{errorMessage}</div>}
-
-          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {!isLoginView && (
-              <input
-                type="text"
-                placeholder="Adınız Soyadınız"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={inputStyle}
-              />
-            )}
-
-            <input
-              type="email"
-              placeholder="E-posta Adresi"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={inputStyle}
-            />
-
-            <input
-              type="password"
-              placeholder="Şifre"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
-
-            {!isLoginView && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-around', margin: '5px 0', fontSize: '14px' }}>
-                  <label style={{ cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="role"
-                      value="owner"
-                      checked={role === 'owner'}
-                      onChange={() => setRole('owner')}
-                    />{' '}
-                    Evcil Hayvan Sahibi
-                  </label>
-
-                  <label style={{ cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="role"
-                      value="sitter"
-                      checked={role === 'sitter'}
-                      onChange={() => setRole('sitter')}
-                    />{' '}
-                    Bakıcı
-                  </label>
-                </div>
-
-                <label style={checkboxLabelStyle}>
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    required
-                  />
-                  Kullanıcı sözleşmesini kabul ediyorum.
-                </label>
-              </>
-            )}
-
-            <button type="submit" style={buttonStyle}>
-              {isLoginView ? 'Giriş Yap' : 'Kayıt Ol'}
-            </button>
-          </form>
-
-          <p style={{ marginTop: '20px', fontSize: '14px', color: '#6c757d' }}>
-            {isLoginView ? 'Hesabınız yok mu?' : 'Zaten üye misiniz?'}{' '}
-            <span
-              onClick={() => {
-                setIsLoginView(!isLoginView);
-                setErrorMessage('');
-              }}
-              style={linkStyle}
-            >
-              {isLoginView ? 'Kayıt Ol' : 'Giriş Yap'}
-            </span>
-          </p>
-        </div>
-      </div>
+    return isLoginView ? (
+      <LoginPage
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleAuthSubmit}
+        onSwitchToRegister={() => {
+          setIsLoginView(false);
+          setErrorMessage('');
+        }}
+        errorMessage={errorMessage}
+      />
+    ) : (
+      <RegisterPage
+        name={name}
+        email={email}
+        password={password}
+        role={role}
+        termsAccepted={termsAccepted}
+        onNameChange={setName}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onRoleChange={setRole}
+        onTermsChange={setTermsAccepted}
+        onSubmit={handleAuthSubmit}
+        onSwitchToLogin={() => {
+          setIsLoginView(true);
+          setErrorMessage('');
+        }}
+        errorMessage={errorMessage}
+      />
     );
   }
 
@@ -558,48 +508,13 @@ function App() {
             </div>
 
             {currentView === 'listings' && (
-              <div style={{ marginTop: '25px' }}>
-                <h3>Aktif Bakıcı İlanları</h3>
-
-                {loadingListings && <p>Bakıcılar yükleniyor...</p>}
-
-                {!loadingListings && listings.length === 0 && (
-                  <p>Henüz aktif bakıcı ilanı bulunamadı.</p>
-                )}
-
-                <div style={gridStyle}>
-                  {listings.map((listing) => (
-                    <div key={listing.id} style={listingCardStyle}>
-                      <h4 style={{ marginTop: 0 }}>{listing.title}</h4>
-
-                      <p>
-                        <strong>Bakıcı:</strong> {listing.sitter_name}
-                      </p>
-
-                      <p>{listing.description}</p>
-
-                      <p>
-                        <strong>Konum:</strong> {listing.location}
-                      </p>
-
-                      <p>
-                        <strong>Günlük Ücret:</strong> {listing.price_per_day} TL
-                      </p>
-
-                      <button onClick={() => openBookingForm(listing)} style={buttonStyle}>
-                        Rezervasyon Talebi Oluştur
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openMessagePage(listing.sitter_id, listing.sitter_name)}
-                        style={secondaryButtonStyle}
-                      >
-                        Mesajlaş
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <SitterListPage
+                listings={listings}
+                loading={loadingListings}
+                onBook={openBookingForm}
+                onMessage={openMessagePage}
+                onBack={() => setCurrentView('dashboard')}
+              />
             )}
 
             {currentView === 'create-booking' && selectedListing && (
@@ -891,7 +806,8 @@ function BookingsList({
               {userRole === 'sitter' && booking.status === 'pending' && (
                 <>
                   <button
-                    onClick={() => updateBookingStatus(booking.id, 'accepted')}
+                    type="button"
+                    onClick={() => updateBookingStatus(Number(booking.id), 'accepted')}
                     disabled={updatingBookingId === booking.id}
                     style={successButtonStyle}
                   >
@@ -899,7 +815,8 @@ function BookingsList({
                   </button>
 
                   <button
-                    onClick={() => updateBookingStatus(booking.id, 'rejected')}
+                    type="button"
+                    onClick={() => updateBookingStatus(Number(booking.id), 'rejected')}
                     disabled={updatingBookingId === booking.id}
                     style={dangerButtonStyle}
                   >
@@ -1063,6 +980,18 @@ const roleBadgeStyle = {
   borderRadius: '20px',
   fontSize: '14px',
   fontWeight: 'bold'
+};
+
+const badgeStyle = {
+  display: 'inline-block',
+  minWidth: '24px',
+  padding: '2px 8px',
+  borderRadius: '12px',
+  backgroundColor: '#ff6b6b',
+  color: '#fff',
+  fontSize: '12px',
+  fontWeight: '600',
+  textAlign: 'center'
 };
 
 const checkboxLabelStyle = {

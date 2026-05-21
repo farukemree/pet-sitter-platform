@@ -15,9 +15,17 @@ const getAuthHeader = () => {
 export const messageService = {
   // 1. Karşı tarafa mesaj gönderme (POST /api/messaging/send)
   sendMessage: async (receiverId, content) => {
+    const parsedReceiverId = Number(receiverId);
+    if (!receiverId || Number.isNaN(parsedReceiverId)) {
+      throw new Error('Geçerli bir sohbet alıcısı seçin.');
+    }
+    if (!content || content.trim().length === 0) {
+      throw new Error('Mesaj içeriği boş olamaz.');
+    }
+
     const response = await axios.post(
       `${API_URL}/send`, 
-      { receiverId, content }, 
+      { receiverId: parsedReceiverId, content: content.trim() }, 
       getAuthHeader()
     );
     return response.data.data;

@@ -70,10 +70,19 @@ class BookingService {
       throw new Error('Geçersiz rezervasyon durumu');
     }
 
+    const booking = await bookingRepository.findById(bookingId);
+    if (!booking || booking.sitter_id !== user.id) {
+      throw new Error('Rezervasyon bulunamadı veya bu işlem için yetkiniz yok');
+    }
+
+    if (booking.status !== 'pending') {
+      throw new Error('Bu rezervasyon artık kabul edilemez');
+    }
+
     const updatedBooking = await bookingRepository.updateStatus(bookingId, user.id, status);
 
     if (!updatedBooking) {
-      throw new Error('Rezervasyon bulunamadı veya bu işlem için yetkiniz yok');
+      throw new Error('Rezervasyon durumu güncellenemedi');
     }
 
     return updatedBooking;

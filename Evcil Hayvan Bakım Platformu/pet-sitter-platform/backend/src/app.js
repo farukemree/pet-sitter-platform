@@ -23,11 +23,14 @@ const app = express();
 
 app.use(helmet());
 
-// Vite varsayılan olarak 5173 portunu kullanır, buraya ekledik kral
+// Vite varsayılan olarak 5173 portunu kullanır, frontend bizim config'te 5174 portunu kullanıyor.
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: true,
   credentials: true
 }));
+
+// Preflight isteklerini açıkça destekliyoruz.
+app.options('*', cors({ origin: true, credentials: true }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
